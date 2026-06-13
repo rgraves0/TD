@@ -1,37 +1,34 @@
-from config import Config
+import logging
+from pyrogram import Client, filters
+from pyrogram.enums import ParseMode
+from tg.config import Config
 
-from pyrogram import Client
+# Logger setup
+logger = logging.getLogger(__name__)
 
-from .logger import LOGGER
-from .settings import bot_set
+# Global Filter: သတ်မှတ်ထားတဲ့ Group ID မဟုတ်ရင် ဘာ Message မှ လက်မခံရန် တားဆီးခြင်း
+@Client.on_message(~filters.chat(-1002439446144), group=-1)
+async def restrict_all_chats(client, message):
+    message.stop_propagation()
 
-plugins = dict(
-    root="bot/modules"
-)
-
-class Bot(Client):
+class TgClient(Client):
     def __init__(self):
+        name = self.__class__.__name__.lower()
         super().__init__(
-            "Project-Siesta",
-            api_id=Config.APP_ID,
+            name,
+            api_id=Config.API_ID,
             api_hash=Config.API_HASH,
-            bot_token=Config.TG_BOT_TOKEN,
-            plugins=plugins,
-            workdir=Config.WORK_DIR,
-            workers=100
+            bot_token=Config.BOT_TOKEN,
+            workers=Config.WORKERS,
+            plugins=dict(root="tg/plugins"),
+            parse_mode=ParseMode.DEFAULT,
         )
 
     async def start(self):
         await super().start()
-        await bot_set.login_qobuz()
-        await bot_set.login_deezer()
-        await bot_set.login_tidal()
-        LOGGER.info("BOT : Started Successfully")
+        me = await self.get_me()
+        logger.info(f"Bot started as @{me.username}")
 
     async def stop(self, *args):
         await super().stop()
-        for client in bot_set.clients:
-            await client.session.close()
-        LOGGER.info('BOT : Exited Successfully ! Bye..........')
-
-aio = Bot()
+        logger.info("Bot stopped.")
