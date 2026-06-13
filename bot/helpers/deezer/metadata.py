@@ -13,7 +13,7 @@ async def process_track_metadata(track_id, r_id, cover=None, \
     metadata = copy.deepcopy(base_meta)
 
     raw_meta = await deezerapi.get_track(track_id)
-    raw_meta=raw_meta['DATA']
+    raw_meta = raw_meta['DATA']
     t_meta = raw_meta.get('FALLBACK', raw_meta)
     
     metadata['tempfolder'] += f"{r_id}-temp/"
@@ -64,7 +64,8 @@ async def process_album_metadata(album_id:int, a_meta:dict, t_meta:list, r_id):
     metadata['upc'] = a_meta['UPC']
     metadata['title'] = a_meta['ALB_TITLE']
     if a_meta.get('VERSION'):
-        metadata['title'] += f' ({a_meta['VERSION']})'
+        metadata['title'] += f' ({a_meta["VERSION"]})'
+
     metadata['album'] = a_meta['ALB_TITLE']
     metadata['artist'] = get_artists_name(a_meta)
     metadata['date'] = a_meta['DIGITAL_RELEASE_DATE']
@@ -111,6 +112,8 @@ async def process_playlist_meta(raw_meta, r_id):
     metadata['cover'] = await get_cover(raw_meta['DATA']['PLAYLIST_PICTURE'], metadata)
     metadata['thumbnail'] = await get_cover(raw_meta['DATA']['PLAYLIST_PICTURE'], metadata, True)
     
+    metadata['tracks'] = []
+
     for track in raw_meta['SONGS']['data']:
         try:
             track_meta = await process_track_metadata(track['SNG_ID'], r_id)
@@ -121,11 +124,6 @@ async def process_playlist_meta(raw_meta, r_id):
     metadata['quality'] = metadata['tracks'][0]['quality']
 
     return metadata
-
-
-
-
-
 
 
 
@@ -169,8 +167,10 @@ async def get_quality(meta:dict):
             if meta[f'FILESIZE_{f}'] != '0':
                 temp_f = f
                 break
+
         if temp_f is None:
             temp_f = 'MP3_128'
+
         format = temp_f
 
         if format not in deezerapi.available_formats:
